@@ -8,6 +8,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 0, "NoiseScale")
 	self:NetworkVar("Float", 1, "NoiseHeight")
 	self:NetworkVar("Float", 2, "Lag")
+	self:NetworkVar("Float", 3, "Transparency")
 end
 
 function ENT:Initialize()

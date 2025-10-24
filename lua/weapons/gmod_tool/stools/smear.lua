@@ -6,6 +6,7 @@ TOOL.ConfigName = ""
 TOOL.ClientConVar["noisescale"] = 15
 TOOL.ClientConVar["noiseheight"] = 1.3
 TOOL.ClientConVar["lag"] = 0.1
+TOOL.ClientConVar["transparency"] = 0
 
 local firstReload = true
 function TOOL:Think()
@@ -87,6 +88,7 @@ function TOOL:LeftClick(tr)
 	smearEnt:SetNoiseScale(self:GetClientNumber("noisescale"))
 	smearEnt:SetNoiseHeight(self:GetClientNumber("noiseheight"))
 	smearEnt:SetLag(self:GetClientNumber("lag"))
+	smearEnt:SetTransparency(self:GetClientNumber("transparency"))
 
 	return true
 end
@@ -112,6 +114,7 @@ function TOOL:RightClick(tr)
 		ply:ConCommand("smear_noisescale" .. smearEnt:GetNoiseScale())
 		ply:ConCommand("smear_noiseheight" .. smearEnt:GetNoiseHeight())
 		ply:ConCommand("smear_lag" .. smearEnt:GetLag())
+		ply:ConCommand("smear_transparency" .. smearEnt:GetTransparency())
 	end
 
 	return true
@@ -128,6 +131,7 @@ function TOOL.BuildCPanel(cPanel)
 	cPanel:NumSlider("#tool.smear.noisescale", "smear_noisescale", 0, 30, 3)
 	cPanel:NumSlider("#tool.smear.noiseheight", "smear_noiseheight", 0, 10, 3)
 	cPanel:NumSlider("#tool.smear.lag", "smear_lag", 0, 2, 5)
+	cPanel:NumSlider("#tool.smear.transparency", "smear_transparency", 0, 1, 5)
 end
 
 TOOL.Information = {

@@ -22,8 +22,9 @@ function VLAZED_SMEAR_GENERATOR:makeSmear(baseTexture)
 		["$depthtest"] = 1,
 		["$writedepth"] = 0,
 		["$writealpha"] = 0,
-		["$copyalpha"] = 1,
+		["$copyalpha"] = 0,
 		["$alphablend"] = 1,
 		["$alpha_blend"] = 1,
+		["$c0_x"] = 0,
 	})
 end

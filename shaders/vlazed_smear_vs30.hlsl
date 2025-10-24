@@ -142,7 +142,7 @@ VS_OUTPUT main(VS_INPUT v)
 	output.vWorldNormal.xyz = worldNormal.xyz;
 	output.vWorldTangent = float4( worldTangentS.xyz, vTangent.w );	 // Propagate binormal sign in world tangent.w
 	// Smear alpha to pass to pixel shader
-	output.smearAlpha = float4(smearOffset / (worldPos.xyz - smearOffset), 1.0);
+	output.smearAlpha = float4(worldOffset, 0.0);
 
 	// Transform into projection space
 	float4 vProjPos = mul( float4( worldPos, 1 ), cViewProj );

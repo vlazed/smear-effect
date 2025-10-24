@@ -42,6 +42,8 @@ function ENT:Draw(flags)
 		return
 	end
 
+	local transparency = math.Clamp(1 - self:GetTransparency(), 0, 1)
+	self.smearMaterial:SetFloat("$c0_x", transparency)
 	self:SetMaterial("!" .. self.smearMaterial:GetName())
 	-- render.SetMaterial(self.smearMaterial)
 	vertexMetadata(self, flags)
