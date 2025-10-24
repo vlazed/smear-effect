@@ -42,7 +42,6 @@ function ENT:Draw(flags)
 		return
 	end
 
-	self:SetupBones()
 	self:SetMaterial("!" .. self.smearMaterial:GetName())
 	-- render.SetMaterial(self.smearMaterial)
 	vertexMetadata(self, flags)
