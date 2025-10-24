@@ -63,7 +63,7 @@ struct VS_OUTPUT
 #endif
 	// Stuff that is seen by the pixel shader
 
-	float4 baseTexCoord2_tangentSpaceVertToEyeVectorXY			: TEXCOORD0;
+	float2 uv			: TEXCOORD0;
 	float3 lightAtten											: TEXCOORD1;
 	float4 worldVertToEyeVectorXYZ_tangentSpaceVertToEyeVectorZ	: TEXCOORD2;
 	float3 vWorldNormal											: TEXCOORD3;	// World-space normal
@@ -73,9 +73,7 @@ struct VS_OUTPUT
 #else
 	float3 vWorldBinormal										: TEXCOORD5;
 #endif
-	float4 worldPos_projPosZ									: TEXCOORD6;
-	float3 detailTexCoord_atten3								: TEXCOORD7;
-	float4 fogFactorW											: COLOR1;
+	float4 smearAlpha											: COLOR0;
 
 #if defined( _X360 ) && FLASHLIGHT
 	float4 flashlightSpacePos									: TEXCOORD8;
@@ -120,7 +118,7 @@ VS_OUTPUT main(VS_INPUT v)
 	worldPos += worldNormal * 0.05f * v.vTexCoord2.z;
 #endif
 
-	// Smearing
+	// Smearing from https://github.com/cjacobwade/HelpfulScripts/blob/de0133e0c33a8b80501945a0253ba061f18a034b/SmearEffect/Smear.shader
 	float3 position = float3(cAmbientCubeX[0].x, cAmbientCubeX[0].y, cAmbientCubeX[0].z);
 	float3 prevPosition = float3(cAmbientCubeX[1].x, cAmbientCubeX[1].y, cAmbientCubeX[1].z);
 	float noiseScale = cAmbientCubeY[0].x;
@@ -143,54 +141,13 @@ VS_OUTPUT main(VS_INPUT v)
 	VS_OUTPUT output = (VS_OUTPUT)0;
 	output.vWorldNormal.xyz = worldNormal.xyz;
 	output.vWorldTangent = float4( worldTangentS.xyz, vTangent.w );	 // Propagate binormal sign in world tangent.w
+	// Smear alpha to pass to pixel shader
+	output.smearAlpha = float4(smearOffset / (worldPos.xyz - smearOffset), 1.0);
 
 	// Transform into projection space
 	float4 vProjPos = mul( float4( worldPos, 1 ), cViewProj );
 	output.projPos = vProjPos;
 	output.uv = v.vTexCoord0.xy;
-
-	#if USE_WITH_2B
-	o.vProjPos = vProjPos;
-#else
-	o.vWorldBinormal.xyz = worldTangentT.xyz;
-#endif
-
-	o.fogFactorW = CalcFog( worldPos, vProjPos, g_FogType );
-#if !defined( _X360 )
-	o.fog = o.fogFactorW;
-#endif
-
- 	// Needed for water fog alpha and diffuse lighting
-	// FIXME: we shouldn't have to compute this all the time.
-	o.worldPos_projPosZ = float4( worldPos, vProjPos.z );
-
-	// Needed for cubemapping + parallax mapping
-	// FIXME: We shouldn't have to compute this all the time.
-	//o.worldVertToEyeVectorXYZ_tangentSpaceVertToEyeVectorZ.xyz = VSHADER_VECT_SCALE * (cEyePos - worldPos);
-	o.worldVertToEyeVectorXYZ_tangentSpaceVertToEyeVectorZ.xyz = normalize( cEyePos.xyz - worldPos.xyz );
-
-#if defined( SHADER_MODEL_VS_2_0 ) && ( !USE_STATIC_CONTROL_FLOW )
-	o.lightAtten.xyz = float3(0,0,0);
-	o.detailTexCoord_atten3.z = 0.0f;
-	#if ( NUM_LIGHTS > 0 )
-		o.lightAtten.x = GetVertexAttenForLight( worldPos, 0, false );
-	#endif
-	#if ( NUM_LIGHTS > 1 )
-		o.lightAtten.y = GetVertexAttenForLight( worldPos, 1, false );
-	#endif
-	#if ( NUM_LIGHTS > 2 )
-		o.lightAtten.z = GetVertexAttenForLight( worldPos, 2, false );
-	#endif
-	#if ( NUM_LIGHTS > 3 )
-		o.detailTexCoord_atten3.z = GetVertexAttenForLight( worldPos, 3, false );
-	#endif
-#else
-	// Scalar light attenuation
-	o.lightAtten.x = GetVertexAttenForLight( worldPos, 0, true );
-	o.lightAtten.y = GetVertexAttenForLight( worldPos, 1, true );
-	o.lightAtten.z = GetVertexAttenForLight( worldPos, 2, true );
-	o.detailTexCoord_atten3.z = GetVertexAttenForLight( worldPos, 3, true );
-#endif
 
 	return output;
 };

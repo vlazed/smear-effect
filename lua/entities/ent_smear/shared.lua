@@ -16,6 +16,8 @@ function ENT:Initialize()
 		self:SetupBones()
 		self:InvalidateBoneCache()
 	end
+
+	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 end
 
 function ENT:InitializeRenderParams()
