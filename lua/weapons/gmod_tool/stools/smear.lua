@@ -136,7 +136,6 @@ end
 
 TOOL.Information = {
 	{ name = "left", stage = 0 },
-	{ name = "left_1", stage = 1, op = 2 },
 	{ name = "right", stage = 0 },
 	{ name = "reload" },
 }
