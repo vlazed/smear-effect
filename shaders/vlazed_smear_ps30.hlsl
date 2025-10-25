@@ -3,7 +3,8 @@
 
 sampler BASETEXTURE : register(s0);
 
-float4 TRANSPARENCY : register(c0);
+float4 COLOR : register(c0);
+float4 BRIGHTNESS : register(c1);
 
 struct PS_INPUT
 {
@@ -21,5 +22,5 @@ float4 main(PS_INPUT frag) : COLOR
 {
     // return float4(TRANSPARENCY.x, 0.0, 0.0, 1.0);
     float smearAlpha = ease_in_out_quint(clamp(length(frag.smearAlpha.xyz), 0, 1));
-    return float4(tex2D(BASETEXTURE, frag.uv).xyz, TRANSPARENCY.x * smearAlpha);
+    return float4(BRIGHTNESS.x * COLOR.rgb * tex2D(BASETEXTURE, frag.uv).xyz, COLOR.a * smearAlpha);
 }

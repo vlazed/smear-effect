@@ -25,6 +25,10 @@ function VLAZED_SMEAR_GENERATOR:makeSmear(baseTexture)
 		["$copyalpha"] = 0,
 		["$alphablend"] = 1,
 		["$alpha_blend"] = 1,
-		["$c0_x"] = 0,
+		["$c0_x"] = 1,
+		["$c0_y"] = 1,
+		["$c0_z"] = 1,
+		["$c0_w"] = 1,
+		["$c1_x"] = 1,
 	})
 end
