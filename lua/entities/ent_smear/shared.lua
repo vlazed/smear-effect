@@ -41,10 +41,22 @@ function ENT:Initialize()
 	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 end
 
+---@param ent Entity
+---@return IMaterial
+local function getMaterial(ent)
+	---TODO: Remove the diagnostic once the new skin argument is added in main branch
+	---INFO: GetSkin argument only works in x86_64 branch
+	---@diagnostic disable-next-line
+	local meshData = util.GetModelMeshes(ent:GetModel(), 0, nil, ent:GetSkin())
+	local material = Material(meshData[1].material)
+	return material
+end
+
 function ENT:InitializeRenderParams()
 	local parent = self:GetParent()
-	self.baseTexture = Material(parent:GetMaterials()[1]):GetTexture("$basetexture")
+	self.baseTexture = getMaterial(parent):GetTexture("$basetexture")
 	self.smearMaterial = VLAZED_SMEAR_GENERATOR:makeSmear(self.baseTexture:GetName())
+
 	self.position = parent:GetPos()
 	self.prevPosition = parent:GetPos()
 end

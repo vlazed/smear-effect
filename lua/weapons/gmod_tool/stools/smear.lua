@@ -82,6 +82,7 @@ end
 -- Filter entities that shouldn't be smeared
 local smearFilter = {
 	["ent_smear"] = true, -- Don't smear entities like ourselves
+	["manipulate_flex"] = true, -- Don't smear flex entities
 	["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
 	["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
 	["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
@@ -115,6 +116,10 @@ local smearFilter = {
 ---@return ent_smear
 function AddSmear(parent, smearParams)
 	if smearFilter[parent:GetClass()] then
+		return NULL
+	end
+
+	if parent.GetModel and not parent:GetModel() then
 		return NULL
 	end
 
@@ -229,15 +234,15 @@ function TOOL:RightClick(tr)
 	if IsValid(entity.smearEnt) then
 		---@type ent_smear
 		local smearEnt = entity.smearEnt
-		ply:ConCommand("smear_noisescale" .. smearEnt:GetNoiseScale())
-		ply:ConCommand("smear_noiseheight" .. smearEnt:GetNoiseHeight())
-		ply:ConCommand("smear_lag" .. smearEnt:GetLag())
-		ply:ConCommand("smear_color_a" .. smearEnt:GetTransparency() * 255)
+		ply:ConCommand("smear_noisescale " .. smearEnt:GetNoiseScale())
+		ply:ConCommand("smear_noiseheight " .. smearEnt:GetNoiseHeight())
+		ply:ConCommand("smear_lag " .. smearEnt:GetLag())
+		ply:ConCommand("smear_color_a " .. smearEnt:GetTransparency() * 255)
 
 		local color = smearEnt:GetSmearColor() * 255
-		ply:ConCommand("smear_color_r" .. color.x)
-		ply:ConCommand("smear_color_g" .. color.y)
-		ply:ConCommand("smear_color_b" .. color.z)
+		ply:ConCommand("smear_color_r " .. color.x)
+		ply:ConCommand("smear_color_g " .. color.y)
+		ply:ConCommand("smear_color_b " .. color.z)
 	end
 
 	return true
