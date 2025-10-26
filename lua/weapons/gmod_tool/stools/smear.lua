@@ -12,15 +12,6 @@ TOOL.ClientConVar["color_b"] = 255
 TOOL.ClientConVar["color_a"] = 255
 TOOL.ClientConVar["brightness"] = 1
 
-local enableBonemergeFix = CreateConVar(
-	"sv_smear_enable_bonemerge_fix",
-	"1",
-	FCVAR_ARCHIVE + FCVAR_REPLICATED,
-	"Fix smears not working on some bonemerged objects",
-	0,
-	1
-)
-
 ---@class SmearParams
 ---@field color Vector
 ---@field brightness number
@@ -37,11 +28,7 @@ function TOOL:Think()
 	end
 end
 
-local badBonemergeClasses = {
-	["ent_bonemerged"] = true,
-	["ent_composite"] = true,
-}
-
+---Remove smears from an entity's hierarchy
 ---@param tool TOOL
 ---@param root SmearEntity
 local function removeSmearFromHierarchy(tool, root)
@@ -79,99 +66,7 @@ function TOOL:Holster()
 	self:ClearObjects()
 end
 
--- Filter entities that shouldn't be smeared
-local smearFilter = {
-	["ent_smear"] = true, -- Don't smear entities like ourselves
-	["manipulate_flex"] = true, -- Don't smear flex entities
-	["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
-	["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
-	["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
-	["particle_player"] = true, -- 3D Particle Effects Player
-	["particlecontroller_normal"] = true, -- 3D Particle Effects Player
-	["particlecontroller_proj"] = true, -- Advanced Particle Controller
-	["particlecontroller_tracer"] = true, -- Advanced Particle Controller
-	["parctrl_dummyent"] = true, -- Advanced Particle Controller
-	["prop_effect"] = true,
-}
-
----Add a smear to the entity. If the `parent` is in the `smearFilter`, then this will return NULL
----
----```
----local smearFilter = {
----	["ent_smear"] = true, -- Don't smear the smear entities
----	["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
----	["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
----	["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
----	["particle_player"] = true, -- 3D Particle Effects Player
----	["particlecontroller_normal"] = true, -- 3D Particle Effects Player
----	["particlecontroller_proj"] = true, -- Advanced Particle Controller
----	["particlecontroller_tracer"] = true, -- Advanced Particle Controller
----	["parctrl_dummyent"] = true, -- Advanced Particle Controller
----}
----
----```
----
----@param parent SmearEntity
----@param smearParams SmearParams
----@return ent_smear
-function AddSmear(parent, smearParams)
-	if smearFilter[parent:GetClass()] then
-		return NULL
-	end
-
-	if parent.GetModel and not parent:GetModel() then
-		return NULL
-	end
-
-	if enableBonemergeFix:GetBool() and badBonemergeClasses[parent:GetClass()] then
-		net.Start("smear_add_bonemerge")
-		net.WriteEntity(parent)
-		net.Broadcast()
-	end
-
-	local smearEnt = parent.smearEnt
-	if not IsValid(smearEnt) then
-		---@diagnostic disable-next-line
-		smearEnt = ents.Create("ent_smear")
-		---@cast smearEnt ent_smear
-		smearEnt:SetModel(parent:GetModel())
-		smearEnt:SetSkin(parent:GetSkin())
-		for i = 0, parent:GetNumBodyGroups() do
-			smearEnt:SetBodygroup(i, parent:GetBodygroup(i))
-		end
-		smearEnt:Spawn()
-
-		smearEnt:SetParent(parent, 0)
-
-		smearEnt:SetMoveType(MOVETYPE_NONE)
-		smearEnt:SetSolid(SOLID_NONE)
-		smearEnt:SetLocalPos(vector_origin)
-		smearEnt:SetLocalAngles(angle_zero)
-
-		smearEnt:AddEffects(EF_BONEMERGE)
-		if parent:GetClass() == "prop_ragdoll" then
-			smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
-		end
-		smearEnt:SetModelScale(parent:GetModelScale())
-		for i = 0, parent:GetBoneCount() do
-			smearEnt:ManipulateBoneScale(i, parent:GetManipulateBoneScale(i))
-			smearEnt:ManipulateBoneAngles(i, parent:GetManipulateBoneAngles(i))
-			smearEnt:ManipulateBonePosition(i, parent:GetManipulateBonePosition(i))
-		end
-
-		parent.smearEnt = smearEnt
-	end
-
-	smearEnt:SetSmearColor(smearParams.color)
-	smearEnt:SetBrightness(smearParams.brightness)
-	smearEnt:SetNoiseScale(smearParams.noiseScale)
-	smearEnt:SetNoiseHeight(smearParams.noiseHeight)
-	smearEnt:SetLag(smearParams.lag)
-	smearEnt:SetTransparency(smearParams.transparency)
-
-	return smearEnt
-end
-
+---Add smears to an entity's hierarchy
 ---@param root SmearEntity
 ---@param smearParams SmearParams
 local function addSmearToHierarchy(root, smearParams)
@@ -245,6 +140,121 @@ end
 if SERVER then
 	util.AddNetworkString("smear_add_bonemerge")
 	util.AddNetworkString("smear_remove_bonemerge")
+
+	-- Filter entities that shouldn't be smeared
+	local smearFilter = {
+		["ent_smear"] = true, -- Don't smear entities like ourselves
+		["manipulate_flex"] = true, -- Don't smear flex entities
+		["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
+		["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
+		["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
+		["particle_player"] = true, -- 3D Particle Effects Player
+		["particlecontroller_normal"] = true, -- 3D Particle Effects Player
+		["particlecontroller_proj"] = true, -- Advanced Particle Controller
+		["particlecontroller_tracer"] = true, -- Advanced Particle Controller
+		["parctrl_dummyent"] = true, -- Advanced Particle Controller
+		["prop_effect"] = true,
+	}
+
+	local enableBonemergeFix = CreateConVar(
+		"sv_smear_enable_bonemerge_fix",
+		"1",
+		FCVAR_ARCHIVE + FCVAR_REPLICATED,
+		"Fix smears not working on some bonemerged objects",
+		0,
+		1
+	)
+
+	local badBonemergeClasses = {
+		["ent_bonemerged"] = true,
+		["ent_composite"] = true,
+	}
+
+	---Add a smear to the entity.
+	---
+	---If the `parent` is in the `smearFilter` or if it doesn't have a valid model, then this will return NULL
+	---
+	---```
+	---local smearFilter = {
+	---["ent_smear"] = true, -- Don't smear entities like ourselves
+	---["manipulate_flex"] = true, -- Don't smear flex entities
+	---["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
+	---["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
+	---["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
+	---["particle_player"] = true, -- 3D Particle Effects Player
+	---["particlecontroller_normal"] = true, -- 3D Particle Effects Player
+	---["particlecontroller_proj"] = true, -- Advanced Particle Controller
+	---["particlecontroller_tracer"] = true, -- Advanced Particle Controller
+	---["parctrl_dummyent"] = true, -- Advanced Particle Controller
+	---["prop_effect"] = true,
+	---}
+	---
+	---```
+	---
+	---If the entity is a bonemerged entity and fits one of the `badBonemergeClasses`, and `sv_smear_enable_bonemerge_fix 1`,
+	---then it will detour the entity's current `Draw` function to force support (see `smear_bonemerge_override.lua`)
+	---
+	---@param parent SmearEntity
+	---@param smearParams SmearParams
+	---@return ent_smear
+	function AddSmear(parent, smearParams)
+		if smearFilter[parent:GetClass()] then
+			return NULL
+		end
+
+		if parent.GetModel and not parent:GetModel() or not util.IsValidModel(parent:GetModel()) then
+			return NULL
+		end
+
+		if enableBonemergeFix:GetBool() and badBonemergeClasses[parent:GetClass()] then
+			net.Start("smear_add_bonemerge")
+			net.WriteEntity(parent)
+			net.Broadcast()
+		end
+
+		local smearEnt = parent.smearEnt
+		if not IsValid(smearEnt) then
+			---@diagnostic disable-next-line
+			smearEnt = ents.Create("ent_smear")
+			---@cast smearEnt ent_smear
+			smearEnt:SetModel(parent:GetModel())
+			smearEnt:SetSkin(parent:GetSkin())
+			for i = 0, parent:GetNumBodyGroups() do
+				smearEnt:SetBodygroup(i, parent:GetBodygroup(i))
+			end
+			smearEnt:Spawn()
+
+			smearEnt:SetParent(parent, 0)
+
+			smearEnt:SetMoveType(MOVETYPE_NONE)
+			smearEnt:SetSolid(SOLID_NONE)
+			smearEnt:SetLocalPos(vector_origin)
+			smearEnt:SetLocalAngles(angle_zero)
+
+			smearEnt:AddEffects(EF_BONEMERGE)
+			if parent:GetClass() == "prop_ragdoll" then
+				smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
+			end
+			smearEnt:SetModelScale(parent:GetModelScale())
+			for i = 0, parent:GetBoneCount() do
+				smearEnt:ManipulateBoneScale(i, parent:GetManipulateBoneScale(i))
+				smearEnt:ManipulateBoneAngles(i, parent:GetManipulateBoneAngles(i))
+				smearEnt:ManipulateBonePosition(i, parent:GetManipulateBonePosition(i))
+			end
+
+			parent.smearEnt = smearEnt
+		end
+
+		smearEnt:SetSmearColor(smearParams.color)
+		smearEnt:SetBrightness(smearParams.brightness)
+		smearEnt:SetNoiseScale(smearParams.noiseScale)
+		smearEnt:SetNoiseHeight(smearParams.noiseHeight)
+		smearEnt:SetLag(smearParams.lag)
+		smearEnt:SetTransparency(smearParams.transparency)
+
+		return smearEnt
+	end
+
 	return
 end
 
