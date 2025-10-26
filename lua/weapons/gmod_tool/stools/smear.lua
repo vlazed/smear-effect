@@ -149,20 +149,14 @@ function AddSmear(parent, smearParams)
 		smearEnt:SetLocalAngles(angle_zero)
 
 		smearEnt:AddEffects(EF_BONEMERGE)
-		smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
+		if parent:GetClass() == "prop_ragdoll" then
+			smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
+		end
+		smearEnt:SetModelScale(parent:GetModelScale())
 		for i = 0, parent:GetBoneCount() do
-			if smearEnt:GetManipulateBoneScale(i) ~= parent:GetManipulateBoneScale(i) then
-				parent:ManipulateBoneScale(i, smearEnt:GetManipulateBoneScale(i))
-			end
-			if smearEnt:GetManipulateBoneAngles(i) ~= parent:GetManipulateBoneAngles(i) then
-				parent:ManipulateBoneAngles(i, smearEnt:GetManipulateBoneAngles(i))
-			end
-			if smearEnt:GetManipulateBonePosition(i) ~= parent:GetManipulateBonePosition(i) then
-				parent:ManipulateBonePosition(i, smearEnt:GetManipulateBonePosition(i))
-			end
-			if smearEnt:GetManipulateBoneJiggle(i) ~= parent:GetManipulateBoneJiggle(i) then
-				parent:ManipulateBoneJiggle(i, smearEnt:GetManipulateBoneJiggle(i))
-			end
+			smearEnt:ManipulateBoneScale(i, parent:GetManipulateBoneScale(i))
+			smearEnt:ManipulateBoneAngles(i, parent:GetManipulateBoneAngles(i))
+			smearEnt:ManipulateBonePosition(i, parent:GetManipulateBonePosition(i))
 		end
 
 		parent.smearEnt = smearEnt

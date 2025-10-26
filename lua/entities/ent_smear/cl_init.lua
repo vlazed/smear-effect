@@ -36,6 +36,7 @@ function ENT:Think()
 	if not IsValid(self.parent) then
 		return
 	end
+	self:SetColor(self:GetParent():GetColor())
 
 	local time = CurTime()
 	self.now = self.now or time

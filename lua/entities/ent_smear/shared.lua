@@ -54,7 +54,8 @@ end
 
 function ENT:InitializeRenderParams()
 	local parent = self:GetParent()
-	self.baseTexture = getMaterial(parent):GetTexture("$basetexture")
+	local targetMaterial = #parent:GetMaterial() > 0 and Material(parent:GetMaterial()) or getMaterial(parent)
+	self.baseTexture = targetMaterial:GetTexture("$basetexture")
 	self.smearMaterial = VLAZED_SMEAR_GENERATOR:makeSmear(self.baseTexture:GetName())
 
 	self.position = parent:GetPos()
