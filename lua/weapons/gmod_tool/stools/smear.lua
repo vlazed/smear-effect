@@ -12,11 +12,51 @@ TOOL.ClientConVar["color_b"] = 255
 TOOL.ClientConVar["color_a"] = 255
 TOOL.ClientConVar["brightness"] = 1
 
+local enableBonemergeFix = CreateConVar(
+	"sv_smear_enable_bonemerge_fix",
+	"1",
+	FCVAR_ARCHIVE + FCVAR_REPLICATED,
+	"Fix smears not working on some bonemerged objects",
+	0,
+	1
+)
+
+---@class SmearParams
+---@field color Vector
+---@field brightness number
+---@field noiseScale number
+---@field noiseHeight number
+---@field lag number
+---@field transparency number
+
 local firstReload = true
 function TOOL:Think()
 	if CLIENT and firstReload then
 		self:RebuildControlPanel()
 		firstReload = false
+	end
+end
+
+local badBonemergeClasses = {
+	["ent_bonemerged"] = true,
+	["ent_composite"] = true,
+}
+
+---@param tool TOOL
+---@param root SmearEntity
+local function removeSmearFromHierarchy(tool, root)
+	if IsValid(root.smearEnt) then
+		root.smearEnt:Remove()
+	end
+
+	net.Start("smear_remove_bonemerge")
+	net.WriteEntity(root)
+	net.Broadcast()
+
+	local children = root:GetChildren() or {}
+	for _, entity in ipairs(children) do
+		---@cast entity SmearEntity
+		removeSmearFromHierarchy(tool, entity)
 	end
 end
 
@@ -30,16 +70,118 @@ function TOOL:Reload(tr)
 		return false
 	end
 
-	local smearEnt = entity.smearEnt
-	if IsValid(smearEnt) then
-		smearEnt:Remove()
-	end
+	removeSmearFromHierarchy(self, entity)
 
 	return true
 end
 
 function TOOL:Holster()
 	self:ClearObjects()
+end
+
+-- Filter entities that shouldn't be smeared
+local smearFilter = {
+	["ent_smear"] = true, -- Don't smear entities like ourselves
+	["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
+	["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
+	["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
+	["particle_player"] = true, -- 3D Particle Effects Player
+	["particlecontroller_normal"] = true, -- 3D Particle Effects Player
+	["particlecontroller_proj"] = true, -- Advanced Particle Controller
+	["particlecontroller_tracer"] = true, -- Advanced Particle Controller
+	["parctrl_dummyent"] = true, -- Advanced Particle Controller
+	["prop_effect"] = true,
+}
+
+---Add a smear to the entity. If the `parent` is in the `smearFilter`, then this will return NULL
+---
+---```
+---local smearFilter = {
+---	["ent_smear"] = true, -- Don't smear the smear entities
+---	["prop_replacementeffect"] = true, -- TF2 Hat Painter & Crit Glow
+---	["proxyent_tf2critglow"] = true, -- TF2 Hat Painter & Crit Glow
+---	["proxyent_tf2cloakeffect"] = true, -- TF2 Cloak Effect
+---	["particle_player"] = true, -- 3D Particle Effects Player
+---	["particlecontroller_normal"] = true, -- 3D Particle Effects Player
+---	["particlecontroller_proj"] = true, -- Advanced Particle Controller
+---	["particlecontroller_tracer"] = true, -- Advanced Particle Controller
+---	["parctrl_dummyent"] = true, -- Advanced Particle Controller
+---}
+---
+---```
+---
+---@param parent SmearEntity
+---@param smearParams SmearParams
+---@return ent_smear
+function AddSmear(parent, smearParams)
+	if smearFilter[parent:GetClass()] then
+		return NULL
+	end
+
+	if enableBonemergeFix:GetBool() and badBonemergeClasses[parent:GetClass()] then
+		net.Start("smear_add_bonemerge")
+		net.WriteEntity(parent)
+		net.Broadcast()
+	end
+
+	local smearEnt = parent.smearEnt
+	if not IsValid(smearEnt) then
+		---@diagnostic disable-next-line
+		smearEnt = ents.Create("ent_smear")
+		---@cast smearEnt ent_smear
+		smearEnt:SetModel(parent:GetModel())
+		smearEnt:SetSkin(parent:GetSkin())
+		for i = 0, parent:GetNumBodyGroups() do
+			smearEnt:SetBodygroup(i, parent:GetBodygroup(i))
+		end
+		smearEnt:Spawn()
+
+		smearEnt:SetParent(parent, 0)
+
+		smearEnt:SetMoveType(MOVETYPE_NONE)
+		smearEnt:SetSolid(SOLID_NONE)
+		smearEnt:SetLocalPos(vector_origin)
+		smearEnt:SetLocalAngles(angle_zero)
+
+		smearEnt:AddEffects(EF_BONEMERGE)
+		smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
+		for i = 0, parent:GetBoneCount() do
+			if smearEnt:GetManipulateBoneScale(i) ~= parent:GetManipulateBoneScale(i) then
+				parent:ManipulateBoneScale(i, smearEnt:GetManipulateBoneScale(i))
+			end
+			if smearEnt:GetManipulateBoneAngles(i) ~= parent:GetManipulateBoneAngles(i) then
+				parent:ManipulateBoneAngles(i, smearEnt:GetManipulateBoneAngles(i))
+			end
+			if smearEnt:GetManipulateBonePosition(i) ~= parent:GetManipulateBonePosition(i) then
+				parent:ManipulateBonePosition(i, smearEnt:GetManipulateBonePosition(i))
+			end
+			if smearEnt:GetManipulateBoneJiggle(i) ~= parent:GetManipulateBoneJiggle(i) then
+				parent:ManipulateBoneJiggle(i, smearEnt:GetManipulateBoneJiggle(i))
+			end
+		end
+
+		parent.smearEnt = smearEnt
+	end
+
+	smearEnt:SetSmearColor(smearParams.color)
+	smearEnt:SetBrightness(smearParams.brightness)
+	smearEnt:SetNoiseScale(smearParams.noiseScale)
+	smearEnt:SetNoiseHeight(smearParams.noiseHeight)
+	smearEnt:SetLag(smearParams.lag)
+	smearEnt:SetTransparency(smearParams.transparency)
+
+	return smearEnt
+end
+
+---@param root SmearEntity
+---@param smearParams SmearParams
+local function addSmearToHierarchy(root, smearParams)
+	AddSmear(root, smearParams)
+	local children = root:GetChildren() or {}
+	for _, entity in ipairs(children) do
+		---@cast entity SmearEntity
+		addSmearToHierarchy(entity, smearParams)
+	end
 end
 
 ---Add a smear entity, or update the entity's smear parameters
@@ -52,56 +194,18 @@ function TOOL:LeftClick(tr)
 		return false
 	end
 
-	local smearEnt = entity.smearEnt
-	if not IsValid(smearEnt) then
-		---@diagnostic disable-next-line
-		smearEnt = ents.Create("ent_smear")
-		---@cast smearEnt ent_smear
-		smearEnt:SetModel(entity:GetModel())
-		smearEnt:SetSkin(entity:GetSkin())
-		for i = 0, entity:GetNumBodyGroups() do
-			smearEnt:SetBodygroup(i, entity:GetBodygroup(i))
-		end
-		smearEnt:Spawn()
-
-		smearEnt:SetParent(entity, 0)
-
-		smearEnt:SetMoveType(MOVETYPE_NONE)
-		smearEnt:SetSolid(SOLID_NONE)
-		smearEnt:SetLocalPos(vector_origin)
-		smearEnt:SetLocalAngles(angle_zero)
-
-		smearEnt:AddEffects(EF_BONEMERGE)
-		smearEnt:AddEffects(EF_BONEMERGE_FASTCULL)
-		for i = 0, entity:GetBoneCount() do
-			if smearEnt:GetManipulateBoneScale(i) ~= entity:GetManipulateBoneScale(i) then
-				entity:ManipulateBoneScale(i, smearEnt:GetManipulateBoneScale(i))
-			end
-			if smearEnt:GetManipulateBoneAngles(i) ~= entity:GetManipulateBoneAngles(i) then
-				entity:ManipulateBoneAngles(i, smearEnt:GetManipulateBoneAngles(i))
-			end
-			if smearEnt:GetManipulateBonePosition(i) ~= entity:GetManipulateBonePosition(i) then
-				entity:ManipulateBonePosition(i, smearEnt:GetManipulateBonePosition(i))
-			end
-			if smearEnt:GetManipulateBoneJiggle(i) ~= entity:GetManipulateBoneJiggle(i) then
-				entity:ManipulateBoneJiggle(i, smearEnt:GetManipulateBoneJiggle(i))
-			end
-		end
-
-		entity.smearEnt = smearEnt
-	end
-	smearEnt:SetSmearColor(
-		Color(
+	addSmearToHierarchy(entity, {
+		color = Color(
 			self:GetClientNumber("color_r", 255),
 			self:GetClientNumber("color_g", 255),
 			self:GetClientNumber("color_b", 255)
-		):ToVector()
-	)
-	smearEnt:SetBrightness(self:GetClientNumber("brightness", 1))
-	smearEnt:SetNoiseScale(self:GetClientNumber("noisescale"))
-	smearEnt:SetNoiseHeight(self:GetClientNumber("noiseheight"))
-	smearEnt:SetLag(self:GetClientNumber("lag"))
-	smearEnt:SetTransparency(self:GetClientNumber("color_a", 255) / 255)
+		):ToVector(),
+		brightness = self:GetClientNumber("brightness", 1),
+		noiseScale = self:GetClientNumber("noisescale"),
+		noiseHeight = self:GetClientNumber("noiseheight"),
+		lag = self:GetClientNumber("lag"),
+		transparency = self:GetClientNumber("color_a", 255) / 255,
+	})
 
 	return true
 end
@@ -140,6 +244,8 @@ function TOOL:RightClick(tr)
 end
 
 if SERVER then
+	util.AddNetworkString("smear_add_bonemerge")
+	util.AddNetworkString("smear_remove_bonemerge")
 	return
 end
 

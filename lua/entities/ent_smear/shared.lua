@@ -1,5 +1,7 @@
 ---@class SmearEntity: Entity
 ---@field smearEnt ent_smear
+---@field Draw fun(self: SmearEntity, flags: number)
+---@field smear_oldDraw fun(self: SmearEntity, flags: number)
 
 ---@class ent_smear: ENT
 ---@field GetNoiseScale fun(self: ent_smear): noiseScale: number

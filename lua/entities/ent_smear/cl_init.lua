@@ -10,7 +10,6 @@ local function vertexMetadata(self, flags)
 	render.OverrideDepthEnable(true, true)
 	render.SuppressEngineLighting(true)
 
-	-- print(self:GetNoiseScale(), self:GetNoiseHeight())
 	render.SetModelLighting(0, self.position.x, self.position.y, self.position.z)
 	render.SetModelLighting(1, self.prevPosition.x, self.prevPosition.y, self.prevPosition.z)
 	render.SetModelLighting(2, self:GetNoiseScale(), self:GetNoiseHeight(), CurTime())
@@ -21,9 +20,20 @@ local function vertexMetadata(self, flags)
 	render.OverrideDepthEnable(false, false)
 end
 
+local function getAncestor(ent)
+	local root = ent
+	local parent = ent:GetParent()
+	while IsValid(parent) do
+		root = parent
+		parent = root:GetParent()
+	end
+
+	return root
+end
+
 function ENT:Think()
-	local parent = self:GetParent()
-	if not IsValid(parent) then
+	self.parent = self.parent or getAncestor(self)
+	if not IsValid(self.parent) then
 		return
 	end
 
@@ -33,7 +43,7 @@ function ENT:Think()
 		self.prevPosition = self.position
 		self.now = time
 	end
-	self.position = parent:GetPos()
+	self.position = self.parent:GetPos()
 end
 
 function ENT:Draw(flags)
@@ -51,7 +61,7 @@ function ENT:Draw(flags)
 	self:SetMaterial("!" .. self.smearMaterial:GetName())
 	-- render.SetMaterial(self.smearMaterial)
 	vertexMetadata(self, flags)
-	self:DrawModel()
+	self:DrawModel(flags)
 	-- render.DrawSphere(self.position, 20, 5, 5)
 end
 
