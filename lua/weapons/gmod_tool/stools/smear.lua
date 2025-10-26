@@ -3,6 +3,12 @@ TOOL.Name = "#tool.smear.name"
 TOOL.Command = nil
 TOOL.ConfigName = ""
 
+TOOL.ClientConVar["key"] = 0
+TOOL.ClientConVar["toggle"] = 1
+TOOL.ClientConVar["starton"] = 1
+
+TOOL.ClientConVar["persist"] = 0
+
 TOOL.ClientConVar["noisescale"] = 15
 TOOL.ClientConVar["noiseheight"] = 130
 TOOL.ClientConVar["lag"] = 0.1
@@ -19,6 +25,10 @@ TOOL.ClientConVar["brightness"] = 1
 ---@field noiseHeight number
 ---@field lag number
 ---@field transparency number
+---@field key integer
+---@field toggle boolean
+---@field startOn boolean
+---@field persist boolean
 
 local firstReload = true
 function TOOL:Think()
@@ -69,12 +79,13 @@ end
 ---Add smears to an entity's hierarchy
 ---@param root SmearEntity
 ---@param smearParams SmearParams
-local function addSmearToHierarchy(root, smearParams)
-	AddSmear(root, smearParams)
+---@param ply Player
+local function addSmearToHierarchy(root, smearParams, ply)
+	AddSmear(ply, root, smearParams)
 	local children = root:GetChildren() or {}
 	for _, entity in ipairs(children) do
 		---@cast entity SmearEntity
-		addSmearToHierarchy(entity, smearParams)
+		addSmearToHierarchy(entity, smearParams, ply)
 	end
 end
 
@@ -99,7 +110,11 @@ function TOOL:LeftClick(tr)
 		noiseHeight = self:GetClientNumber("noiseheight"),
 		lag = self:GetClientNumber("lag"),
 		transparency = self:GetClientNumber("color_a", 255) / 255,
-	})
+		key = self:GetClientNumber("key", 0),
+		toggle = tobool(self:GetClientBool("toggle", true)),
+		startOn = tobool(self:GetClientBool("starton", true)),
+		persist = tobool(self:GetClientBool("persist", false)),
+	}, self:GetOwner())
 
 	return true
 end
@@ -197,7 +212,7 @@ if SERVER then
 	---@param parent SmearEntity
 	---@param smearParams SmearParams
 	---@return ent_smear
-	function AddSmear(parent, smearParams)
+	function AddSmear(ply, parent, smearParams)
 		if smearFilter[parent:GetClass()] then
 			return NULL
 		end
@@ -251,9 +266,25 @@ if SERVER then
 		smearEnt:SetNoiseHeight(smearParams.noiseHeight)
 		smearEnt:SetLag(smearParams.lag)
 		smearEnt:SetTransparency(smearParams.transparency)
+		smearEnt:SetActive(Either(smearParams.startOn ~= nil, smearParams.startOn, true))
+
+		if IsValid(ply) then
+			smearEnt:SetNumpadKey(smearParams.key)
+			smearEnt:SetToggle(smearParams.toggle)
+
+			numpad.OnDown(ply, smearParams.key, "smear_press", smearEnt)
+			numpad.OnUp(ply, smearParams.key, "smear_release", smearEnt)
+		end
+
+		duplicator.ClearEntityModifier(parent, "smear_persist")
+		if smearParams.persist then
+			duplicator.StoreEntityModifier(parent, "smear_persist", smearParams)
+		end
 
 		return smearEnt
 	end
+
+	duplicator.RegisterEntityModifier("smear_persist", AddSmear)
 
 	return
 end
@@ -300,6 +331,12 @@ function TOOL.BuildCPanel(cPanel)
 		:NumSlider("#tool.smear.noiseheight", "smear_noiseheight", 0, 1000, 3)
 		:SetTooltip("#tool.smear.noiseheight.tooltip")
 	smearShapeCategory:NumSlider("#tool.smear.lag", "smear_lag", 0, 2, 5):SetTooltip("#tool.smear.lag.tooltip")
+
+	local controlCategory = makeCategory(cPanel, "#tool.smear.control", "ControlPanel")
+	controlCategory:KeyBinder("#tool.smear.key", "smear_key")
+	controlCategory:CheckBox("#tool.smear.toggle", "smear_toggle")
+	controlCategory:CheckBox("#tool.smear.starton", "smear_starton")
+	controlCategory:CheckBox("#tool.smear.persist", "smear_persist"):SetTooltip("#tool.smear.persist.tooltip")
 end
 
 TOOL.Information = {

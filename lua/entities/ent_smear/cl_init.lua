@@ -53,6 +53,10 @@ function ENT:Draw(flags)
 		return
 	end
 
+	if not self:GetActive() then
+		return
+	end
+
 	local color = self:GetSmearColor()
 	self.smearMaterial:SetFloat("$c0_x", color.x)
 	self.smearMaterial:SetFloat("$c0_y", color.y)

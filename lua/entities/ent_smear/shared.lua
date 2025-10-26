@@ -16,10 +16,20 @@
 ---@field SetBrightness fun(self: ent_smear, brightness: number)
 ---@field GetSmearColor fun(self: ent_smear): smearColor: Vector
 ---@field SetSmearColor fun(self: ent_smear, smearColor: Vector)
+---@field SetNumpadKey fun(self: ent_smear, numpadKey: integer)
+---@field SetStartOn fun(self: ent_smear, startOn: boolean)
+---@field SetToggle fun(self: ent_smear, toggle: boolean)
+---@field GetNumpadKey fun(self: ent_smear): numpadKey: integer
+---@field GetStartOn fun(self: ent_smear): startOn: boolean
+---@field GetToggle fun(self: ent_smear): toggle: boolean
+---@field GetActive fun(self: ent_smear): active: boolean
+---@field SetActive fun(self: ent_smear, active: boolean)
 local ENT = ENT
 
 ENT.Type = "anim"
 ENT.Base = "base_anim"
+
+ENT.DoNotDuplicate = true
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Float", 0, "NoiseScale")
@@ -27,6 +37,11 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 2, "Lag")
 	self:NetworkVar("Float", 3, "Transparency")
 	self:NetworkVar("Float", 4, "Brightness")
+
+	self:NetworkVar("Int", 0, "NumpadKey")
+
+	self:NetworkVar("Bool", 0, "Toggle")
+	self:NetworkVar("Bool", 1, "Active")
 
 	self:NetworkVar("Vector", 0, "SmearColor")
 end

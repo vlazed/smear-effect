@@ -20,7 +20,9 @@ This adds a tool which allows you to equip any prop or ragdoll with a smear effe
 
 - **Simple smears**: This adds a smear entity which follows your entity and produces a smear effect
   - This smear effect is simple
-- **Customizable smears**: Customize smear noise scale, noise height, lag, and color (WIP)!
+- **Customizable smears**: Customize smear noise scale, noise height, lag, and color!
+- **Controllable smears**: Smear can be bound and controlled by a key
+- **Save/dupe support**: If enabled, smears can be saved or transferred by dupes
 
 ### Rational
 
