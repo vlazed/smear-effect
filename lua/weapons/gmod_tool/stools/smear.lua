@@ -17,6 +17,9 @@ TOOL.ClientConVar["color_g"] = 255
 TOOL.ClientConVar["color_b"] = 255
 TOOL.ClientConVar["color_a"] = 255
 TOOL.ClientConVar["brightness"] = 1
+TOOL.ClientConVar["model"] = ""
+TOOL.ClientConVar["skin"] = 0
+TOOL.ClientConVar["bodygroup"] = ""
 
 ---@class SmearParams
 ---@field color Vector
@@ -29,6 +32,9 @@ TOOL.ClientConVar["brightness"] = 1
 ---@field toggle boolean
 ---@field startOn boolean
 ---@field persist boolean
+---@field model string
+---@field skin integer
+---@field bodygroup string
 
 local firstReload = true
 function TOOL:Think()
@@ -99,7 +105,8 @@ function TOOL:LeftClick(tr)
 		return false
 	end
 
-	addSmearToHierarchy(entity, {
+	---@type SmearParams
+	local smearParams = {
 		color = Color(
 			self:GetClientNumber("color_r", 255),
 			self:GetClientNumber("color_g", 255),
@@ -114,7 +121,13 @@ function TOOL:LeftClick(tr)
 		toggle = tobool(self:GetClientBool("toggle", true)),
 		startOn = tobool(self:GetClientBool("starton", true)),
 		persist = tobool(self:GetClientBool("persist", false)),
-	}, self:GetOwner())
+		model = self:GetClientInfo("model"),
+		bodygroup = self:GetClientInfo("bodygroup"),
+		skin = self:GetClientNumber("skin", 0),
+	}
+	local ply = self:GetOwner()
+
+	addSmearToHierarchy(entity, smearParams, ply)
 
 	return true
 end
@@ -260,6 +273,12 @@ if SERVER then
 			parent.smearEnt = smearEnt
 		end
 
+		if smearParams.model[1] and util.IsValidModel(smearParams.model) then
+			smearEnt:SetModel(smearParams.model)
+			smearEnt:SetSkin(smearParams.skin)
+			smearEnt:SetBodyGroups(smearParams.bodygroup)
+			smearEnt:SetDifferentModel(true)
+		end
 		smearEnt:SetSmearColor(smearParams.color)
 		smearEnt:SetBrightness(smearParams.brightness)
 		smearEnt:SetNoiseScale(smearParams.noiseScale)
@@ -331,6 +350,88 @@ function TOOL.BuildCPanel(cPanel)
 		:NumSlider("#tool.smear.noiseheight", "smear_noiseheight", 0, 1000, 3)
 		:SetTooltip("#tool.smear.noiseheight.tooltip")
 	smearShapeCategory:NumSlider("#tool.smear.lag", "smear_lag", 0, 2, 5):SetTooltip("#tool.smear.lag.tooltip")
+
+	local modelCategory = makeCategory(smearShapeCategory, "#tool.smear.model", "ControlPanel")
+	modelCategory:SetExpanded(true)
+	---@class SmearModelEntry: DTextEntry
+	local modelEntry = modelCategory:TextEntry("#tool.smear.model.entry", "smear_model")
+	modelEntry:SetTooltip("#tool.smear.model.entry.tooltip")
+	local skin = modelCategory:NumSlider("#tool.smear.model.skin", "smear_skin", 0, 10, 0)
+	---@cast skin DNumSlider
+	skin:SetEnabled(false)
+	---@class SmearBodygroupCategory: ControlPanel
+	---@field Items Panel[]
+	local bodygroupCategory = makeCategory(modelCategory, "#tool.smear.model.bodygroup", "ControlPanel")
+
+	local bodygroupCVar = GetConVar("smear_bodygroup")
+
+	---@param val integer
+	local function parseValue(val)
+		if val > 9 then
+			return tostring(97 + val - 10)
+		end
+		return tostring(val)
+	end
+
+	local function getBodygroupString()
+		local bodygroupStr = ""
+		for _, panel in ipairs(bodygroupCategory.Items) do
+			local slider = panel:GetChildren()[1]
+			---@cast slider DNumSlider
+			bodygroupStr = bodygroupStr .. parseValue(math.Round(slider:GetValue()))
+		end
+		return bodygroupStr
+	end
+
+	---@param name string
+	---@param count integer
+	local function makeBodygroupSlider(name, count, initialValue)
+		---@class SmearBodygroupSlider: DNumSlider
+		local slider = bodygroupCategory:NumSlider(string.NiceName(name), "", 0, count, 0)
+		slider:SetValue(initialValue)
+
+		if count == 0 then
+			slider:SetVisible(false)
+			function slider:GetValue()
+				return 0
+			end
+		end
+		function slider:OnValueChanged(_)
+			bodygroupCVar:SetString(getBodygroupString())
+		end
+	end
+
+	function modelEntry:OnValueChange(model)
+		bodygroupCategory:Clear()
+		skin:SetEnabled(false)
+
+		if not model then
+			return
+		end
+
+		local ent = ClientsideModel(model)
+		---@cast ent CSEnt
+		local ok, result = pcall(function()
+			if not IsValid(ent) then
+				return
+			end
+
+			ent:SetModelScale(0)
+			skin:SetEnabled(true)
+			skin:SetDark(true)
+			skin:SetMax(ent:SkinCount() - 1)
+			for _, bodygroup in ipairs(ent:GetBodyGroups()) do
+				---@cast bodygroup BodyGroupData
+				makeBodygroupSlider(bodygroup.name, bodygroup.num - 1, bodygroupCVar:GetString()[bodygroup.id + 1])
+			end
+		end)
+		if not ok and result then
+			ErrorNoHalt(result, "\n")
+		end
+		if IsValid(ent) then
+			ent:Remove()
+		end
+	end
 
 	local controlCategory = makeCategory(cPanel, "#tool.smear.control", "ControlPanel")
 	controlCategory:KeyBinder("#tool.smear.key", "smear_key")

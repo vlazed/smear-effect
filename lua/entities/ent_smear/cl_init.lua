@@ -20,23 +20,11 @@ local function vertexMetadata(self, flags)
 	render.OverrideDepthEnable(false, false)
 end
 
-local function getAncestor(ent)
-	local root = ent
-	local parent = ent:GetParent()
-	while IsValid(parent) do
-		root = parent
-		parent = root:GetParent()
-	end
-
-	return root
-end
-
 function ENT:Think()
-	self.parent = self.parent or getAncestor(self)
-	if not IsValid(self.parent) then
-		return
+	local parent = self:GetParent()
+	if IsValid(parent) then
+		self:SetColor(parent:GetColor())
 	end
-	self:SetColor(self:GetParent():GetColor())
 
 	local time = CurTime()
 	self.now = self.now or time
@@ -44,7 +32,7 @@ function ENT:Think()
 		self.prevPosition = self.position
 		self.now = time
 	end
-	self.position = self.parent:GetPos()
+	self.position = self:GetBoneMatrix(0):GetTranslation()
 end
 
 function ENT:Draw(flags)

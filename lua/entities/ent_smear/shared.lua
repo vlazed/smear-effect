@@ -24,6 +24,8 @@
 ---@field GetToggle fun(self: ent_smear): toggle: boolean
 ---@field GetActive fun(self: ent_smear): active: boolean
 ---@field SetActive fun(self: ent_smear, active: boolean)
+---@field GetDifferentModel fun(self: ent_smear): differentModel: boolean
+---@field SetDifferentModel fun(self: ent_smear, differentModel: boolean)
 local ENT = ENT
 
 ENT.Type = "anim"
@@ -42,6 +44,7 @@ function ENT:SetupDataTables()
 
 	self:NetworkVar("Bool", 0, "Toggle")
 	self:NetworkVar("Bool", 1, "Active")
+	self:NetworkVar("Bool", 2, "DifferentModel")
 
 	self:NetworkVar("Vector", 0, "SmearColor")
 end
@@ -68,11 +71,11 @@ local function getMaterial(ent)
 end
 
 function ENT:InitializeRenderParams()
-	local parent = self:GetParent()
-	local targetMaterial = #parent:GetMaterial() > 0 and Material(parent:GetMaterial()) or getMaterial(parent)
+	local ent = self:GetDifferentModel() and self or self:GetParent()
+	local targetMaterial = #ent:GetMaterial() > 0 and Material(ent:GetMaterial()) or getMaterial(ent)
 	self.baseTexture = targetMaterial:GetTexture("$basetexture")
 	self.smearMaterial = VLAZED_SMEAR_GENERATOR:makeSmear(self.baseTexture:GetName())
 
-	self.position = parent:GetPos()
-	self.prevPosition = parent:GetPos()
+	self.position = ent:GetPos()
+	self.prevPosition = ent:GetPos()
 end
