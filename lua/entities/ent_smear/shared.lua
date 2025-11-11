@@ -4,6 +4,8 @@
 ---@field smear_oldDraw fun(self: SmearEntity, flags: number)
 
 ---@class ent_smear: ENT
+---@field SetLagFactor fun(self: ent_smear, lagFactor: number)
+---@field GetLagFactor fun(self: ent_smear): lagFactor: number
 ---@field GetNoiseScale fun(self: ent_smear): noiseScale: number
 ---@field GetNoiseHeight fun(self: ent_smear): noiseHeight: number
 ---@field GetLag fun(self: ent_smear): lag: number
@@ -39,6 +41,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 2, "Lag")
 	self:NetworkVar("Float", 3, "Transparency")
 	self:NetworkVar("Float", 4, "Brightness")
+	self:NetworkVar("Float", 5, "LagFactor")
 
 	self:NetworkVar("Int", 0, "NumpadKey")
 

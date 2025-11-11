@@ -29,7 +29,7 @@ function ENT:Think()
 	local time = CurTime()
 	self.now = self.now or time
 	if time > self.now + self:GetLag() then
-		self.prevPosition = self.position
+		self.prevPosition = LerpVector(self:GetLagFactor(), self.prevPosition, self.position)
 		self.now = time
 	end
 	self.position = self:GetBoneMatrix(0):GetTranslation()

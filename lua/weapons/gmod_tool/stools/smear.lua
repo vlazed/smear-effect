@@ -12,6 +12,7 @@ TOOL.ClientConVar["persist"] = 0
 TOOL.ClientConVar["noisescale"] = 15
 TOOL.ClientConVar["noiseheight"] = 130
 TOOL.ClientConVar["lag"] = 0.1
+TOOL.ClientConVar["lagfactor"] = 0.1
 TOOL.ClientConVar["color_r"] = 255
 TOOL.ClientConVar["color_g"] = 255
 TOOL.ClientConVar["color_b"] = 255
@@ -27,6 +28,7 @@ TOOL.ClientConVar["bodygroup"] = ""
 ---@field noiseScale number
 ---@field noiseHeight number
 ---@field lag number
+---@field lagFactor number
 ---@field transparency number
 ---@field key integer
 ---@field toggle boolean
@@ -117,6 +119,7 @@ function TOOL:LeftClick(tr)
 		noiseScale = self:GetClientNumber("noisescale"),
 		noiseHeight = self:GetClientNumber("noiseheight"),
 		lag = self:GetClientNumber("lag"),
+		lagFactor = self:GetClientNumber("lagfactor"),
 		transparency = self:GetClientNumber("color_a", 255) / 255,
 		key = self:GetClientNumber("key", 0),
 		toggle = tobool(self:GetClientBool("toggle", true)),
@@ -285,6 +288,7 @@ if SERVER then
 		smearEnt:SetNoiseScale(smearParams.noiseScale)
 		smearEnt:SetNoiseHeight(smearParams.noiseHeight)
 		smearEnt:SetLag(smearParams.lag)
+		smearEnt:SetLagFactor(smearParams.lagFactor)
 		smearEnt:SetTransparency(smearParams.transparency)
 		smearEnt:SetActive(Either(smearParams.startOn ~= nil, smearParams.startOn, true))
 
@@ -351,6 +355,9 @@ function TOOL.BuildCPanel(cPanel)
 		:NumSlider("#tool.smear.noiseheight", "smear_noiseheight", 0, 1000, 3)
 		:SetTooltip("#tool.smear.noiseheight.tooltip")
 	smearShapeCategory:NumSlider("#tool.smear.lag", "smear_lag", 0, 2, 5):SetTooltip("#tool.smear.lag.tooltip")
+	smearShapeCategory
+		:NumSlider("#tool.smear.lagfactor", "smear_lagfactor", 0, 1, 5)
+		:SetTooltip("#tool.smear.lagfactor.tooltip")
 
 	local modelCategory = makeCategory(smearShapeCategory, "#tool.smear.model", "ControlPanel")
 	modelCategory:SetExpanded(true)
