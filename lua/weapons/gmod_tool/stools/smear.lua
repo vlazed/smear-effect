@@ -49,6 +49,7 @@ end
 ---@param root SmearEntity
 local function removeSmearFromHierarchy(tool, root)
 	if IsValid(root.smearEnt) then
+		duplicator.ClearEntityModifier(root, "smear_persist")
 		root.smearEnt:Remove()
 	end
 
