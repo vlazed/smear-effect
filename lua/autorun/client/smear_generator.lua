@@ -7,8 +7,8 @@ VLAZED_SMEAR_GENERATOR.count = VLAZED_SMEAR_GENERATOR.count or 0
 function VLAZED_SMEAR_GENERATOR:makeSmear(baseTexture)
 	self.count = self.count + 1
 	return CreateMaterial("smear_" .. self.count, "screenspace_general", {
-		["$vertexshader"] = "vlazed_smear10_vs30",
-		["$pixshader"] = "vlazed_smear13_ps30",
+		["$vertexshader"] = "vlazed_smear_vs30",
+		["$pixshader"] = "vlazed_smear_ps30",
 		["$basetexture"] = baseTexture,
 		["$model"] = 1,
 		["$cull"] = 1,
