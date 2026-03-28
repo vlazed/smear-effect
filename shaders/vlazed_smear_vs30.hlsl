@@ -2,6 +2,7 @@
 
 // Smear effect is ported from https://github.com/cjacobwade/HelpfulScripts/blob/de0133e0c33a8b80501945a0253ba061f18a034b/SmearEffect/Smear.shader
 
+#define COMPRESSED_VERTS 1
 #include "common_vs_fxc.h"
 
 static const bool g_bSkinning		= SKINNING ? true : false;
@@ -75,6 +76,8 @@ struct VS_OUTPUT
 #endif
 	float4 smearAlpha											: COLOR0;
 
+	float4 projPosOutput : TEXCOORD6;
+
 #if defined( _X360 ) && FLASHLIGHT
 	float4 flashlightSpacePos									: TEXCOORD8;
 #endif
@@ -103,7 +106,7 @@ VS_OUTPUT main(VS_INPUT v)
 
 	// Perform skinning
 	float3 worldNormal, worldPos, worldTangentS, worldTangentT;
-	SkinPositionNormalAndTangentSpace( g_bSkinning, vPosition, vNormal, vTangent,
+	SkinPositionNormalAndTangentSpace( true, vPosition, vNormal, vTangent,
 		v.vBoneWeights, v.vBoneIndices, worldPos,
 		worldNormal, worldTangentS, worldTangentT );
 
@@ -147,6 +150,7 @@ VS_OUTPUT main(VS_INPUT v)
 	// Transform into projection space
 	float4 vProjPos = mul( float4( worldPos, 1 ), cViewProj );
 	output.projPos = vProjPos;
+	output.projPosOutput = vProjPos;
 	output.uv = v.vTexCoord0.xy;
 
 	return output;

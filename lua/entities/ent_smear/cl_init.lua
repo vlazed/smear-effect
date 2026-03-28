@@ -7,7 +7,8 @@ local dummy_model = ClientsideModel("models/shadertest/vertexlit.mdl")
 dummy_model:SetModelScale(0) -- make it invisible
 ---@param self ent_smear
 local function vertexMetadata(self, flags)
-	render.OverrideDepthEnable(true, true)
+	-- render.OverrideDepthEnable(true, true)
+	render.SetWriteDepthToDestAlpha(true)
 	render.SuppressEngineLighting(true)
 
 	render.SetModelLighting(0, self.position.x, self.position.y, self.position.z)
@@ -17,7 +18,8 @@ local function vertexMetadata(self, flags)
 	dummy_model:DrawModel()
 
 	render.SuppressEngineLighting(false)
-	render.OverrideDepthEnable(false, false)
+	render.SetWriteDepthToDestAlpha(false)
+	-- render.OverrideDepthEnable(false, false)
 end
 
 function ENT:Think()
@@ -55,7 +57,6 @@ function ENT:Draw(flags)
 	-- render.SetMaterial(self.smearMaterial)
 	vertexMetadata(self, flags)
 	self:DrawModel(flags)
-	-- render.DrawSphere(self.position, 20, 5, 5)
 end
 
 function ENT:DrawTranslucent(flags)

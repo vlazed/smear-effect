@@ -33,6 +33,8 @@ local ENT = ENT
 ENT.Type = "anim"
 ENT.Base = "base_anim"
 
+ENT.RenderGroup = RENDERGROUP_BOTH
+
 ENT.DoNotDuplicate = true
 
 function ENT:SetupDataTables()
@@ -50,6 +52,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 2, "DifferentModel")
 
 	self:NetworkVar("Vector", 0, "SmearColor")
+end
+
+function ENT:UpdateTransmitState()
+	return TRANSMIT_ALWAYS
 end
 
 function ENT:Initialize()
