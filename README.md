@@ -1,4 +1,4 @@
-# Smear Shader <!-- omit from toc -->
+# Smear Tools <!-- omit from toc -->
 
 Add smears to your props and ragdolls
 
@@ -14,15 +14,24 @@ Add smears to your props and ragdolls
 
 ## Description
 
-This adds a tool which allows you to equip any prop or ragdoll with a smear effect.
+This adds multiple tools which allows you to equip any prop or ragdoll with different smear effects.
 
 ### Features
 
-- **Simple smears**: This adds a smear entity which follows your entity and produces a smear effect
-  - This smear effect is simple
-- **Customizable smears**: Customize smear noise scale, noise height, lag, and color!
-- **Controllable smears**: Smear can be bound and controlled by a key
-- **Save/dupe support**: If enabled, smears can be saved or transferred by dupes
+- **Smear Tool**
+  - **Simple smears**: This adds a smear entity which follows your entity and produces a smear effect
+    - This smear effect is simple
+  - **Customizable smears**: Customize smear noise scale, noise height, lag, and color!
+  - **Controllable smears**: Smear can be bound and controlled by a key
+  - **Save/dupe support**: If enabled, smears can be saved or transferred by dupes
+- **Smear Trails**
+  - **Custom trails**: This adds a smear trail entity, which leaves behind a trail
+  - **Trail placement**: Trails points can be attached to different entities for unique effects
+  - **Material support**: Prescribe materials to customize the look of the trail
+    - This also comes with custom smear materials, based on Pybun's Smear materials. You can use these as a basis to author new smear materials
+  - **Customizable trails**: Set the lag and number of segments of the trail
+  - **Controllable trails**: Trails can be bound and controlled by a key
+  - **Save/dupe support (WIP)**: Trails are automatically saved or transferred by dupes
 
 ### Rational
 
@@ -50,3 +59,4 @@ When making a pull request, make sure to confine to the style seen throughout. T
 
 - The following websites for the smear shader
   - [cjacobwade's HelpfulScripts repo, which contains the smear shader](https://github.com/cjacobwade/HelpfulScripts/blob/master/SmearEffect/Smear.shader)
+- Smear effects: [Pybun's SFM workshop addon](https://steamcommunity.com/sharedfiles/filedetails/?id=2772349447) and [E7ajamy's GMod port](https://steamcommunity.com/sharedfiles/filedetails/?id=2775163239)
