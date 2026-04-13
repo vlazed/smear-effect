@@ -1,0 +1,36 @@
+"UnLitGeneric"
+{
+	"$basetexture" "vlazed/smears/smear_9"
+	"$alphatest" "1"
+	"$nocull" "1"
+
+	"$cloakPassEnabled"	"1"
+
+	"$blendtintbybasealpha"		"1"
+	"$blendtintcoloroverbase"	"0"
+	"$colortint_base"	"{255 255 255}"
+	"$colortint_tmp"	"[0 0 0]"
+	"$color2"		"{25 255 255}"
+
+
+	"Proxies"
+	{
+		"invis"
+		{
+		}
+		
+		"ItemTintColor"
+		{
+			"resultVar" "$colortint_tmp"
+		}
+		"SelectFirstIfNonZero"
+		{
+			"srcVar1"	"$colortint_tmp"
+			"srcVar2"	"$colortint_base"
+			"resultVar" "$color2"
+		}
+
+	}
+
+
+}
