@@ -321,6 +321,12 @@ local function trailList(cPanel, entity)
 			function trailNode:OnNodeSelected()
 				tree:OnTrailSelected(self)
 			end
+
+			trail:CallOnRemove("smear_trail_RemoveLine", function(ent, ...)
+				if IsValid(ent) and IsValid(trailNode) then
+					trailNode:Remove()
+				end
+			end)
 		end
 	end
 
