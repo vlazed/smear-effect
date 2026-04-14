@@ -95,28 +95,13 @@ local function createPhysicsAttachment(ent, physBone, pos)
 	}
 end
 
----@param ent1 Entity
+local COLOR = FindMetaTable("Color")
+
 ---@param trail ent_smear_trail
----@param ent2 Entity
 ---@param owner Player
 ---@param smearParams SmearTrailParams
-local function setSmearTrail(ent1, trail, ent2, smearParams, owner)
-	if not IsValid(ent1) then
-		return
-	end
-	if not IsValid(trail) then
-		return
-	end
-	if not IsValid(ent2) then
-		return
-	end
-
-	local const = trail.constraint
-	if not const then
-		const = ents.Create("info_target")
-		const:Spawn()
-		const:Activate()
-	end
+local function setSmearTrailParameters(trail, owner, smearParams)
+	setmetatable(smearParams.color, COLOR)
 
 	trail:SetSmearType(smearParams.type)
 	trail:SetSegments(smearParams.segments)
@@ -132,24 +117,9 @@ local function setSmearTrail(ent1, trail, ent2, smearParams, owner)
 		numpad.OnDown(owner, smearParams.key, "smear_trail_press", trail)
 		numpad.OnUp(owner, smearParams.key, "smear_trail_release", trail)
 	end
+end
 
-	constraint.AddConstraintTable(ent1, const, ent2)
-
-	const:SetTable({
-		Type = "vlazed_smear_trail",
-		Ent1 = ent1,
-		Ent2 = ent2,
-		Constraint = trail,
-		SmearParams = smearParams,
-		Owner = owner,
-	})
-	---@diagnostic disable-next-line
-	trail.constraint = const
-
-	const:DeleteOnRemove(trail)
-	ent1:DeleteOnRemove(const)
-	ent2:DeleteOnRemove(const)
-
+local function updateView(trail, ent1, ent2, smearParams)
 	net.Start("smear_trail_update")
 	net.WriteEntity(trail)
 	net.WriteEntity(ent1)
@@ -159,7 +129,53 @@ local function setSmearTrail(ent1, trail, ent2, smearParams, owner)
 	net.Broadcast()
 end
 
-duplicator.RegisterConstraint("vlazed_smear_trail", setSmearTrail, "Ent1", "Ent2", "SmearParams", "Owner")
+---@param ent1 Entity
+---@param ent2 Entity
+---@param owner Player
+---@param smearParams SmearTrailParams
+---@return ent_smear_trail?
+local function addSmearTrail(ent1, ent2, smearParams, owner)
+	if not IsValid(ent1) then
+		return
+	end
+	if not IsValid(ent2) then
+		return
+	end
+
+	local trail = ents.Create("ent_smear_trail")
+	---@cast trail ent_smear_trail
+	trail:Spawn()
+
+	local const = ents.Create("info_target")
+	const:Spawn()
+	const:Activate()
+
+	setSmearTrailParameters(trail, owner, smearParams)
+
+	constraint.AddConstraintTable(ent1, const, ent2, trail)
+
+	const:SetTable({
+		Type = "vlazed_smear_trail",
+		Ent1 = ent1,
+		Ent2 = ent2,
+		SmearParams = smearParams,
+		Owner = owner,
+	})
+
+	trail.Ent1 = ent1
+	trail.Ent2 = ent2
+	trail.constraint = const
+
+	const:DeleteOnRemove(trail)
+	ent1:DeleteOnRemove(const)
+	ent2:DeleteOnRemove(const)
+
+	updateView(trail, ent1, ent2, smearParams)
+
+	return trail
+end
+
+duplicator.RegisterConstraint("vlazed_smear_trail", addSmearTrail, "Ent1", "Ent2", "SmearParams", "Owner")
 
 ---Add a smear entity, or update the entity's smear parameters
 ---@param tr table|TraceResult
@@ -201,15 +217,14 @@ function TOOL:LeftClick(tr)
 			type = self:GetClientNumber("types"),
 		}
 
-		local smearTrail = ents.Create("ent_smear_trail")
-		---@cast smearTrail ent_smear_trail
-		smearTrail:Spawn()
-		setSmearTrail(self:GetEnt(0), smearTrail, entity, smearParams, ply)
+		local trail = addSmearTrail(self:GetEnt(0), entity, smearParams, ply)
 
-		undo.Create("Smear Trail")
-		undo.AddEntity(smearTrail)
-		undo.SetPlayer(ply)
-		undo.Finish()
+		if trail then
+			undo.Create("Smear Trail")
+			undo.AddEntity(trail)
+			undo.SetPlayer(ply)
+			undo.Finish()
+		end
 	end
 
 	return true
@@ -243,11 +258,22 @@ if SERVER then
 		---@cast trail ent_smear_trail
 		local smearParams = net.ReadTable()
 
-		local ent1 = trail.constraint.Ent1
-		local ent2 = trail.constraint.Ent2
+		local ent1 = trail.Ent1
+		local ent2 = trail.Ent2
+		local const = trail.constraint
+
 		local owner = ply
 
-		setSmearTrail(ent1, trail, ent2, smearParams, owner)
+		const:SetTable({
+			Type = "vlazed_smear_trail",
+			Ent1 = ent1,
+			Ent2 = ent2,
+			SmearParams = smearParams,
+			Owner = owner,
+		})
+
+		setSmearTrailParameters(trail, owner, smearParams)
+		updateView(trail, ent1, ent2, smearParams)
 	end)
 
 	util.AddNetworkString("smear_trail_reset")
@@ -385,7 +411,6 @@ function TOOL.BuildCPanel(cPanel, entity)
 		---@diagnostic enable
 
 		local name, type = smearType:GetSelected()
-		print(name, type)
 		---@type SmearTrailParams
 		local smearParams = {
 			color = color,
@@ -399,8 +424,6 @@ function TOOL.BuildCPanel(cPanel, entity)
 			attachment2 = trailEntity.physicsAttachments[2],
 			type = type,
 		}
-
-		print(trailEntity)
 
 		net.Start("smear_trail_update")
 		net.WriteEntity(trailEntity)

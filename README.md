@@ -31,7 +31,7 @@ This adds multiple tools which allows you to equip any prop or ragdoll with diff
     - This also comes with custom smear materials, based on Pybun's Smear materials. You can use these as a basis to author new smear materials
   - **Customizable trails**: Set the lag and number of segments of the trail
   - **Controllable trails**: Trails can be bound and controlled by a key
-  - **Save/dupe support (WIP)**: Trails are automatically saved or transferred by dupes
+  - **Save/dupe support**: Trails are automatically saved or transferred by dupes
 
 ### Rational
 

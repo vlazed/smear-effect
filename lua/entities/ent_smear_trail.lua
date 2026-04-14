@@ -38,6 +38,8 @@ ENT.Author = "vlazed"
 ENT.Purpose = ""
 ENT.Instructions = ""
 
+ENT.DoNotDuplicate = true
+
 ---@param slot integer?
 ---@return fun(): integer
 local function orderer(slot)
@@ -152,7 +154,12 @@ if CLIENT then
 			end
 			local matrix = ent:GetBoneMatrix(boneIndex)
 			self:Queue(
-				LocalToWorld(attachment.pos, angle_zero, matrix:GetTranslation(), matrix:GetAngles()),
+				LocalToWorld(
+					attachment.pos,
+					angle_zero,
+					matrix and matrix:GetTranslation() or vector_origin,
+					matrix and matrix:GetAngles() or angle_zero
+				),
 				(i + 1) % 2
 			)
 		end
@@ -180,9 +187,9 @@ if CLIENT then
 
 	function ENT:Think()
 		self:QueueVertex()
+		self:SetPos(LocalPlayer():GetPos())
 
 		self:SetNextClientThink(CurTime() + self:GetLag())
-		self:SetPos(LocalPlayer():GetPos())
 	end
 
 	function ENT:InitializeMaterial()
